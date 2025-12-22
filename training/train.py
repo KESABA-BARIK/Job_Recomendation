@@ -8,6 +8,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
 import warnings
+import matplotlib.pyplot as plt
+from sklearn.metrics.pairwise import cosine_similarity
 
 warnings.filterwarnings('ignore')
 
@@ -73,7 +75,7 @@ print("\n" + "=" * 50)
 print("DATA EXPLORATION")
 print("=" * 50)
 
-target_col = 'job_title'  # Change to 'job_title' if needed
+target_col = 'category'  # Change to 'job_title' if needed
 print(f"\nTarget column: {target_col}")
 print(f"\nJob distribution:")
 job_counts = df[target_col].value_counts()
@@ -109,6 +111,26 @@ y = df[target_col]
 print(f"Feature matrix shape: {X.shape}")
 print(f"Number of samples: {X.shape[0]}")
 print(f"Number of skill features: {X.shape[1]}")
+num_samples = X.shape[0]
+num_features = X.shape[1]
+
+labels = ["Number of Samples", "Number of Skill Features"]
+values = [num_samples, num_features]
+
+plt.figure()
+plt.bar(labels, values)
+plt.title("Dataset Size vs Feature Dimensionality")
+plt.xlabel("Metric")
+plt.ylabel("Count")
+plt.show()
+
+skill_counts = X.sum(axis=0)
+
+plt.figure()
+plt.spy(X, markersize=1)
+plt.title("Sparsity Pattern of Skill Matrix")
+plt.show()
+
 
 # Train-Test Split
 print("\n" + "=" * 50)
@@ -183,6 +205,63 @@ print("=" * 50)
 joblib.dump(model, os.path.join(models_path, "model.pkl"))
 joblib.dump(mlb, os.path.join(models_path, "mlb.pkl"))
 
+print("\n" + "=" * 50)
+print("BUILDING JOB TITLE VECTORS")
+print("=" * 50)
+
+job_vec = {}              # title -> averaged vector
+job_title_category = {}   # title -> category
+
+for _, row in df.iterrows():
+    title = row['job_title']      # ✅ correct column
+    category = row['category']
+    vec = mlb.transform([row['skills_list']])[0]
+
+    if title not in job_vec:
+        job_vec[title] = []
+        job_title_category[title] = category
+
+    job_vec[title].append(vec)
+
+# Average vectors per job title
+job_vec = {
+    title: np.mean(vectors, axis=0)
+    for title, vectors in job_vec.items()
+}
+
+print(f"Total job titles processed: {len(job_vec)}")
+
+joblib.dump(job_vec, os.path.join(models_path, "job_title_vectors.pkl"))
+joblib.dump(job_title_category, os.path.join(models_path, "job_title_category.pkl"))
+
+print("✓ Job title vectors saved")
+
+def recommend_job_titles(user_skills, top_n=5):
+    valid_skills = [s.lower() for s in user_skills if s.lower() in mlb.classes_]
+
+    if not valid_skills:
+        return None, []
+
+    user_vec = mlb.transform([valid_skills])
+
+    # 1️⃣ Predict category
+    predicted_category = model.predict(user_vec)[0]
+
+    # 2️⃣ Rank job titles inside predicted category
+    scores = []
+    for title, vec in job_vec.items():
+        if job_title_category[title] != predicted_category:
+            continue
+
+        sim = cosine_similarity(user_vec, vec.reshape(1, -1))[0][0]
+        scores.append((title, round(float(sim), 3)))
+
+    scores.sort(key=lambda x: x[1], reverse=True)
+
+    return predicted_category, scores[:top_n]
+
+
+
 print(f"✓ Model saved to: {os.path.join(models_path, 'model.pkl')}")
 print(f"✓ MultiLabelBinarizer saved to: {os.path.join(models_path, 'mlb.pkl')}")
 print(f"\nModel info:")
@@ -217,10 +296,29 @@ for skills in test_cases:
         print(f"\nInput: {skills}")
         print(f"⚠️  No valid skills found in model vocabulary")
 
+
+print("\n" + "=" * 50)
+print("JOB TITLE RECOMMENDATIONS")
+print("=" * 50)
+
+test_inputs = [
+    ["python", "sql", "pandas"],
+    ["java", "spring", "hibernate"],
+    ["javascript", "react", "nodejs"],
+    ["machine learning", "tensorflow", "python"]
+]
+
+for skills in test_cases:
+    category, jobs = recommend_job_titles(skills, top_n=5)
+
+    print("\nSkills:", skills)
+    print("Predicted Category:", category)
+    print("Top Job Titles:")
+    for i, (title, score) in enumerate(jobs, 1):
+        print(f"{i}. {title} (similarity: {score})")
+
+
 print("\n" + "=" * 50)
 print("✓ TRAINING COMPLETE!")
 print("=" * 50)
 print("\nNext steps:")
-print("1. Check if accuracy is acceptable (>60% is decent for this task)")
-print("2. Test the API with real queries")
-print("3. If accuracy is low, consider using job_description text")

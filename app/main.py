@@ -12,13 +12,14 @@ def home():
 
 class SkillsRequest(BaseModel):
     skills: list[str]
+    top_n: int = 5
 
 @app.post("/recommend")
 def recommend_job(request: SkillsRequest):
     print("=== REQUEST RECEIVED ===")
     print(f"Skills: {request.skills}")
     try:
-        result = predict(request.skills)
+        result = predict(request.skills, request.top_n)
         print(f"Result: {result}")
         return {"recommended_job": result}
     except Exception as e:
