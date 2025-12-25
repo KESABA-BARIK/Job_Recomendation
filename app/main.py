@@ -30,3 +30,7 @@ def recommend_job(request: SkillsRequest):
             "error": str(e),
             "type": type(e).__name__
         }
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
