@@ -10,6 +10,8 @@ from sklearn.metrics import classification_report, accuracy_score
 import warnings
 import matplotlib.pyplot as plt
 from sklearn.metrics.pairwise import cosine_similarity
+import mlflow
+import mlflow.sklearn
 
 warnings.filterwarnings('ignore')
 
@@ -20,7 +22,8 @@ os.makedirs(models_path, exist_ok=True)
 
 # Load your dataset
 print("Loading dataset...")
-df = pd.read_csv("all_job_post.csv")  # UPDATE THIS PATH
+df = pd.read_csv(r"C:\Users\Lenovo\PycharmProjects\PythonProject3\Job_Rec\training\all_job_post.csv")
+  # UPDATE THIS PATH
 print(f"Dataset shape: {df.shape}")
 print(f"\nFirst few rows:")
 print(df.head(3))
@@ -150,14 +153,16 @@ print("MODEL TRAINING")
 print("=" * 50)
 
 print("Training RandomForest classifier...")
-model = RandomForestClassifier(
-    n_estimators=100,
-    max_depth=20,
-    min_samples_split=5,
-    random_state=42,
-    n_jobs=-1,
-    verbose=0
-)
+mlflow.set_experiment("Job-Recommendation")
+
+with mlflow.start_run():
+    model = RandomForestClassifier(
+        n_estimators=100,
+        max_depth=20,
+        min_samples_split=5,
+        random_state=42,
+        n_jobs=-1
+    )
 model.fit(X_train, y_train)
 print("✓ Training complete")
 
@@ -172,6 +177,15 @@ print(f"Training Accuracy: {train_acc:.2%}")
 
 test_pred = model.predict(X_test)
 test_acc = accuracy_score(y_test, test_pred)
+mlflow.log_param("n_estimators", 100)
+mlflow.log_param("max_depth", 20)
+
+mlflow.log_metric("train_accuracy", train_acc)
+mlflow.log_metric("test_accuracy", test_acc)
+
+mlflow.sklearn.log_model(model, name="model")
+
+print("✓ MLflow run logged")
 print(f"Testing Accuracy: {test_acc:.2%}")
 
 if test_acc < 0.5:
@@ -321,4 +335,3 @@ for skills in test_cases:
 print("\n" + "=" * 50)
 print("✓ TRAINING COMPLETE!")
 print("=" * 50)
-print("\nNext steps:")
