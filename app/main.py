@@ -1,9 +1,11 @@
 import traceback
 
-from fastapi import FastAPI, HTTPException
-from app.model import predict
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from app.model import predict, extract_skills, mlb
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+
+import pdfplumber
 
 app = FastAPI()
 
@@ -46,3 +48,16 @@ def recommend_job(request: SkillsRequest):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.post("/upload-resume")
+async def upload_resume(resume: UploadFile= File(...)):
+    text = ""
+
+    if resume.filename.endswith("pdf"):
+        with pdfplumber.open(resume.file) as pdf:
+            for page in pdf.pages:
+                text += page.extract_text() or ""
+
+    skills = extract_skills(text, mlb.classes_)
+
+    return {"skills": skills}

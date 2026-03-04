@@ -4,6 +4,7 @@ import joblib
 import os
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import re
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 models_path = os.path.join(project_root, "models")
@@ -81,3 +82,19 @@ def predict(skills: list[str], top_n: int = 5):
             "model_version": "v2.0"
         }
         }
+
+def extract_skills(text: str, skill_vocab: list):
+    if not text:
+        return []
+
+    text = text.lower()
+
+    extracted = []
+
+    for skill in skill_vocab:
+        # match full words only
+        pattern = r'\b' + re.escape(skill) + r'\b'
+        if re.search(pattern, text):
+            extracted.append(skill)
+
+    return list(set(extracted))
