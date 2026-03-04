@@ -3,8 +3,20 @@ import traceback
 from fastapi import FastAPI, HTTPException
 from app.model import predict
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:4200",  # Angular dev server
+        #"https://your-frontend-domain.vercel.app"  # future deployment
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def home():
