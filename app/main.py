@@ -13,7 +13,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:4200",  # Angular dev server
-        #"https://your-frontend-domain.vercel.app"  # future deployment
+        "https://job-recomendation-ui.vercel.app/"  # future deployment
     ],
     allow_credentials=True,
     allow_methods=["*"],
