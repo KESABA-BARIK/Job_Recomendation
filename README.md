@@ -8,7 +8,9 @@
 
 A production-ready **Job Recommendation System** built with **FastAPI**, **Machine Learning**, and **Docker**, featuring automated **CI/CD** using GitHub Actions and continuous deployment on Render.
 
-🔗 **Live API**: [https://job-recomendation-uc67.onrender.com](https://job-recomendation-uc67.onrender.com)
+🔗 **Live UI**:[https://job-recomendation-ui.vercel.app/](https://job-recomendation-ui.vercel.app/)
+
+🔗 **Live API**: [https://job-recomendation-uc67.onrender.com](https://job-recomendation-uc67.onrender.com/docs#)
 
 ---
 
